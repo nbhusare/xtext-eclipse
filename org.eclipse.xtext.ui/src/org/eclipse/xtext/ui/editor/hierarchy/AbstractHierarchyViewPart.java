@@ -62,13 +62,13 @@ public abstract class AbstractHierarchyViewPart extends ViewPart {
 
 	protected <T extends IHierarchyBuilder> T getBuilder(Class<T> clazz) {
 		if (clazz.isInstance(builder)) {
-			return ((T) builder);
+			return clazz.cast(builder);
 		}
 
 		if (builder instanceof DeferredHierarchyBuilder) {
 			IHierarchyBuilder wrappedBuilder = ((DeferredHierarchyBuilder) builder).getHierarchyBuilder();
 			if (clazz.isInstance(wrappedBuilder)) {
-				return ((T) wrappedBuilder);
+				return clazz.cast(wrappedBuilder);
 			}
 		}
 		return null;

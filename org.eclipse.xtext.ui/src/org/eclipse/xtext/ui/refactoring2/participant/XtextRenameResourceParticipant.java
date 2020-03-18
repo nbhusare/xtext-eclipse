@@ -43,7 +43,7 @@ public class XtextRenameResourceParticipant extends RenameParticipant implements
 			} catch (OperationCanceledException e) {
 				throw e;
 			} catch (CoreException e) {
-				throw new RuntimeException(e);
+				return RefactoringStatus.createErrorStatus("Error rename resource participant");
 			}
 	}
 

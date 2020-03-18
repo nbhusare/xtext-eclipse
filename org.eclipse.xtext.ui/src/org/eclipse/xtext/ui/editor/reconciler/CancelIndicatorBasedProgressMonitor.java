@@ -19,11 +19,11 @@ import org.eclipse.xtext.util.CancelIndicator;
  */
 public class CancelIndicatorBasedProgressMonitor implements IProgressMonitor {
 
-	private final IProgressMonitor doDelegate = new NullProgressMonitor();
+	private final IProgressMonitor monitor = new NullProgressMonitor();
 
 	private final CancelIndicator cancelIndicator;
 
-	public CancelIndicatorBasedProgressMonitor(final CancelIndicator cancelIndicator) {
+	public CancelIndicatorBasedProgressMonitor(CancelIndicator cancelIndicator) {
 		this.cancelIndicator = cancelIndicator;
 	}
 
@@ -34,36 +34,36 @@ public class CancelIndicatorBasedProgressMonitor implements IProgressMonitor {
 
 	@Override
 	public void beginTask(String name, int totalWork) {
-		doDelegate.beginTask(name, totalWork);
+		monitor.beginTask(name, totalWork);
 	}
 
 	@Override
 	public void done() {
-		doDelegate.done();
+		monitor.done();
 	}
 
 	@Override
 	public void internalWorked(double work) {
-		doDelegate.internalWorked(work);
+		monitor.internalWorked(work);
 	}
 
 	@Override
 	public void setCanceled(boolean value) {
-		doDelegate.setCanceled(value);
+		monitor.setCanceled(value);
 	}
 
 	@Override
 	public void setTaskName(String name) {
-		doDelegate.setTaskName(name);
+		monitor.setTaskName(name);
 	}
 
 	@Override
 	public void subTask(String name) {
-		doDelegate.subTask(name);
+		monitor.subTask(name);
 	}
 
 	@Override
 	public void worked(int work) {
-		doDelegate.worked(work);
+		monitor.worked(work);
 	}
 }

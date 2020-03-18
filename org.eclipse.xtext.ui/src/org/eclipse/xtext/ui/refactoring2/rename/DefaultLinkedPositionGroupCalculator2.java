@@ -9,11 +9,8 @@
 package org.eclipse.xtext.ui.refactoring2.rename;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 import org.eclipse.core.resources.IProject;
@@ -41,9 +38,9 @@ import org.eclipse.xtext.ui.refactoring.impl.ProjectUtil;
 import org.eclipse.xtext.ui.refactoring.impl.RefactoringResourceSetProvider;
 import org.eclipse.xtext.ui.refactoring.ui.IRenameElementContext;
 import org.eclipse.xtext.ui.refactoring2.LtkIssueAcceptor;
-import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 
@@ -74,7 +71,7 @@ public class DefaultLinkedPositionGroupCalculator2 implements ILinkedPositionGro
 	@Override
 	public Provider<LinkedPositionGroup> getLinkedPositionGroup(IRenameElementContext renameElementContext, IProgressMonitor monitor) {
 		SubMonitor progress = SubMonitor.convert(monitor, 100);
-		XtextEditor editor = ((XtextEditor) renameElementContext.getTriggeringEditor());
+		XtextEditor editor = (XtextEditor) renameElementContext.getTriggeringEditor();
 		IProject project = projectUtil.getProject(renameElementContext.getContextResourceURI());
 		if (project == null) {
 			throw new IllegalStateException(
@@ -92,7 +89,7 @@ public class DefaultLinkedPositionGroupCalculator2 implements ILinkedPositionGro
 			throw new OperationCanceledException();
 		}
 
-		IRenameStrategy2 renameStrategy = globalServiceProvider.<IRenameStrategy2> findService(targetElement, IRenameStrategy2.class);
+		IRenameStrategy2 renameStrategy = globalServiceProvider.findService(targetElement, IRenameStrategy2.class);
 		if (renameStrategy == null) {
 			throw new IllegalArgumentException("Cannot find a rename strategy for " + renameElementContext.getTargetElementURI());
 		}
@@ -101,22 +98,20 @@ public class DefaultLinkedPositionGroupCalculator2 implements ILinkedPositionGro
 		String newName = getNewDummyName(oldName);
 		IResourceServiceProvider resourceServiceProvider = resourceServiceProviderRegistry
 				.getResourceServiceProvider(renameElementContext.getTargetElementURI());
-		LtkIssueAcceptor issues = resourceServiceProvider.<LtkIssueAcceptor> get(LtkIssueAcceptor.class);
-		IChangeSerializer changeSerializer = resourceServiceProvider.<IChangeSerializer> get(IChangeSerializer.class);
+		LtkIssueAcceptor issues = resourceServiceProvider.get(LtkIssueAcceptor.class);
+		IChangeSerializer changeSerializer = resourceServiceProvider.get(IChangeSerializer.class);
 		changeSerializer.setUpdateRelatedFiles(false);
 		RenameChange change = new RenameChange(newName, renameElementContext.getTargetElementURI());
-		RenameContext renameContext = new RenameContext(
-				Collections.<RenameChange> unmodifiableList(CollectionLiterals.<RenameChange> newArrayList(change)), resourceSet,
-				changeSerializer, issues);
+		RenameContext renameContext = new RenameContext(Lists.newArrayList(change), resourceSet, changeSerializer, issues);
 		renameStrategy.applyRename(renameContext);
 
-		List<ReplaceEdit> replaceEdits = new ArrayList<ReplaceEdit>();
+		List<ReplaceEdit> replaceEdits = new ArrayList<>();
 		changeSerializer.applyModifications(c -> {
 			if (c instanceof ITextDocumentChange) {
-				List<ReplaceEdit> toAdd = ((ITextDocumentChange) c).getReplacements().stream().map(
-						replacement -> new ReplaceEdit(replacement.getOffset(), replacement.getLength(), replacement.getReplacementText()))
-						.collect(Collectors.toList());
-				replaceEdits.addAll(toAdd);
+				ITextDocumentChange textDocumentChange = (ITextDocumentChange) c;
+				textDocumentChange.getReplacements().forEach(replacement -> {
+					replaceEdits.add(new ReplaceEdit(replacement.getOffset(), replacement.getLength(), replacement.getReplacementText()));
+				});
 			}
 		});
 
@@ -141,19 +136,19 @@ public class DefaultLinkedPositionGroupCalculator2 implements ILinkedPositionGro
 
 		IXtextDocument document = xtextEditor.getDocument();
 		LinkedPositionGroup group = new LinkedPositionGroup();
-		List<LinkedPosition> linkedPositions = edits.stream().map(replaceEdit -> {
+		List<LinkedPosition> linkedPositions = new ArrayList<>();
+		edits.forEach(replaceEdit -> {
 			try {
 				String textToReplace = document.get(replaceEdit.getOffset(), replaceEdit.getLength());
 				int indexOf = textToReplace.indexOf(originalName);
 				if (indexOf != -1) {
-					int calculatedOffset = (replaceEdit.getOffset() + indexOf);
-					return new LinkedPosition(document, calculatedOffset, originalName.length());
+					int calculatedOffset = replaceEdit.getOffset() + indexOf;
+					linkedPositions.add(new LinkedPosition(document, calculatedOffset, originalName.length()));
 				}
 			} catch (BadLocationException exc) {
 				LOG.error("Skipping invalid text edit " + replaceEdit, exc);
 			}
-			return null;
-		}).filter(Objects::nonNull).collect(Collectors.toList());
+		});
 
 		progress.worked(10);
 
@@ -177,13 +172,13 @@ public class DefaultLinkedPositionGroupCalculator2 implements ILinkedPositionGro
 
 			@Override
 			public int compare(LinkedPosition left, LinkedPosition right) {
-				return (rank(left) - rank(right));
+				return rank(left) - rank(right);
 			}
 
 			private int rank(LinkedPosition o1) {
-				int relativeRank = ((o1.offset + o1.length) - invocationOffset);
+				int relativeRank = (o1.offset + o1.length) - invocationOffset;
 				if (relativeRank < 0) {
-					return (Integer.MAX_VALUE + relativeRank);
+					return Integer.MAX_VALUE + relativeRank;
 				} else {
 					return relativeRank;
 				}

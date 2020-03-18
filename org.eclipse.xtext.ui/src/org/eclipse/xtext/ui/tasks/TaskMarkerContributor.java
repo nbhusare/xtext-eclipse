@@ -20,7 +20,6 @@ import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.xtext.tasks.ITaskFinder;
 import org.eclipse.xtext.tasks.Task;
 import org.eclipse.xtext.ui.markers.IMarkerContributor;
-import org.eclipse.xtext.xbase.lib.Exceptions;
 
 import com.google.inject.Inject;
 
@@ -30,8 +29,8 @@ import com.google.inject.Inject;
  * @since 2.6
  */
 public class TaskMarkerContributor implements IMarkerContributor {
-	
-	private static final Logger log = Logger.getLogger(TaskMarkerContributor.class);
+
+	private static final Logger LOG = Logger.getLogger(TaskMarkerContributor.class);
 
 	@Inject
 	private TaskMarkerCreator markerCreator;
@@ -45,20 +44,20 @@ public class TaskMarkerContributor implements IMarkerContributor {
 	@Override
 	public void updateMarkers(IFile file, Resource resource, IProgressMonitor monitor) {
 		try {
-			final List<Task> tasks = this.taskFinder.findTasks(resource);
+			List<Task> tasks = taskFinder.findTasks(resource);
 			if (monitor.isCanceled()) {
 				throw new OperationCanceledException();
 			}
 			deleteMarkers(file, monitor);
 			createTaskMarkers(file, tasks, monitor);
-		} catch (final CoreException e) {
-			log.error(e.getMessage(), e);
+		} catch (CoreException e) {
+			LOG.error(e.getMessage(), e);
 		}
 	}
 
 	protected void createTaskMarkers(IFile file, List<Task> tasks, IProgressMonitor monitor) throws CoreException {
 		for (Task task : tasks) {
-			this.markerCreator.createMarker(task, file, this.typeProvider.getMarkerType(task));
+			markerCreator.createMarker(task, file, typeProvider.getMarkerType(task));
 		}
 	}
 
@@ -66,8 +65,8 @@ public class TaskMarkerContributor implements IMarkerContributor {
 	public void deleteMarkers(IFile file, IProgressMonitor monitor) {
 		try {
 			file.deleteMarkers(TaskMarkerTypeProvider.XTEXT_TASK_TYPE, true, IResource.DEPTH_ZERO);
-		} catch (Throwable _e) {
-			throw Exceptions.sneakyThrow(_e);
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

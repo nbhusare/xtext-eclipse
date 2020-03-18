@@ -9,7 +9,6 @@
 package org.eclipse.xtext.ui.refactoring2;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -22,6 +21,8 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.resource.ResourceChange;
+
+import com.google.common.io.ByteStreams;
 
 /**
  * @author koehnlein - Initial contribution and API
@@ -43,7 +44,6 @@ public class ReplaceFileContentChange extends ResourceChange {
 	}
 
 	public ReplaceFileContentChange(IFile file, byte[] newContents) {
-		super();
 		this.file = file;
 		this.newContents = newContents;
 	}
@@ -77,25 +77,16 @@ public class ReplaceFileContentChange extends ResourceChange {
 
 	protected byte[] getOldContents() {
 		byte[] oldContents = new byte[0];
-		try (ByteArrayOutputStream oldContentsBAOS = new ByteArrayOutputStream()) {
-			try (InputStream oldContentsIS = file.getContents()) {
-				try {
-					int readBytes = 0;
-					byte[] buffer = new byte[4096];
-					while ((readBytes = oldContentsIS.read(buffer)) != -1) {
-						oldContentsBAOS.write(buffer, 0, readBytes);
-					}
-					oldContents = oldContentsBAOS.toByteArray();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
+		try (InputStream oldContentsIS = file.getContents()) {
+			try {
+				oldContents = ByteStreams.toByteArray(oldContentsIS);
 			} catch (IOException e) {
-				LOG.error("Error closing stream", e);
-			} catch (CoreException e) {
-				throw new RuntimeException(e);
+				LOG.error("Error reading file contents", e);
 			}
 		} catch (IOException e) {
 			LOG.error("Error closing stream", e);
+		} catch (CoreException e) {
+			LOG.error("Error reading file contents", e);
 		}
 		return oldContents;
 	}

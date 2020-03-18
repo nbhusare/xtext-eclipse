@@ -31,7 +31,6 @@ public class HierarchyTreeContentProvider implements ITreeContentProvider {
 	private DeferredTreeContentManager deferredTreeContentManager;
 
 	public HierarchyTreeContentProvider(ViewPart viewPart) {
-		super();
 		this.viewPart = viewPart;
 	}
 
@@ -69,7 +68,7 @@ public class HierarchyTreeContentProvider implements ITreeContentProvider {
 	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		if (viewer instanceof AbstractTreeViewer) {
-			deferredTreeContentManager = new DeferredTreeContentManager(((AbstractTreeViewer) viewer), viewPart.getSite());
+			deferredTreeContentManager = new DeferredTreeContentManager((AbstractTreeViewer) viewer, viewPart.getSite());
 		}
 	}
 }

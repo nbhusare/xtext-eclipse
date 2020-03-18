@@ -8,6 +8,7 @@
  */
 package org.eclipse.xtext.ui.generator;
 
+import org.apache.log4j.Logger;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -19,7 +20,6 @@ import org.eclipse.xtext.generator.IShouldGenerate;
 import org.eclipse.xtext.util.CancelIndicator;
 import org.eclipse.xtext.workspace.IProjectConfig;
 import org.eclipse.xtext.workspace.ProjectConfigAdapter;
-import org.eclipse.xtext.xbase.lib.Exceptions;
 
 import com.google.inject.Singleton;
 
@@ -32,23 +32,26 @@ import com.google.inject.Singleton;
 @Singleton
 public class EclipseBasedShouldGenerate implements IShouldGenerate {
 
+	private static final Logger LOG = Logger.getLogger(EclipseBasedShouldGenerate.class);
+
 	@Override
 	public boolean shouldGenerate(Resource resource, CancelIndicator cancelIndicator) {
-		final URI uri = resource.getURI();
+		URI uri = resource.getURI();
 		if (uri == null || !uri.isPlatformResource()) {
 			return false;
 		}
 
-		final IResource member = ResourcesPlugin.getWorkspace().getRoot().findMember(new Path(uri.toPlatformString(true)));
+		IResource member = ResourcesPlugin.getWorkspace().getRoot().findMember(new Path(uri.toPlatformString(true)));
 		if (member != null && member.getType() == IResource.FILE) {
-			final ProjectConfigAdapter projectConfigAdapter = ProjectConfigAdapter.findInEmfObject(resource.getResourceSet());
+			ProjectConfigAdapter projectConfigAdapter = ProjectConfigAdapter.findInEmfObject(resource.getResourceSet());
 			if (projectConfigAdapter != null) {
-				final IProjectConfig projectConfig = projectConfigAdapter.getProjectConfig();
-				if (projectConfig != null && member.getProject().getName() == projectConfig.getName()) {
+				IProjectConfig projectConfig = projectConfigAdapter.getProjectConfig();
+				if (projectConfig != null && member.getProject().getName().equals(projectConfig.getName())) {
 					try {
 						return member.findMaxProblemSeverity(null, true, IResource.DEPTH_INFINITE) != IMarker.SEVERITY_ERROR;
 					} catch (CoreException e) {
-						throw Exceptions.sneakyThrow(e);
+						LOG.error("The resource " + member.getName() + " does not exist", e);
+						return false;
 					}
 				}
 			}

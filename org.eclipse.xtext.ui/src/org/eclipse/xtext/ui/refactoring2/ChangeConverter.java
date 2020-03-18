@@ -12,13 +12,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.log4j.Logger;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.runtime.Adapters;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.TextChange;
@@ -28,7 +27,7 @@ import org.eclipse.ltk.core.refactoring.resource.RenameResourceChange;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
 import org.eclipse.text.edits.TextEdit;
-import org.eclipse.ui.IEditorReference;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -43,8 +42,6 @@ import org.eclipse.xtext.util.internal.Nullable;
 
 import com.google.common.base.Predicate;
 import com.google.inject.Inject;
-
-import static org.eclipse.xtext.ui.refactoring2.TryWithResource.tryWith;
 
 /**
  * Converts {@link IEmfResourceChange}s to LTK {@link Change}s.
@@ -67,6 +64,8 @@ public class ChangeConverter implements IAcceptor<IEmfResourceChange> {
 			return new ChangeConverter(name, changeFilter, issues, resourceURIConverter, workbench);
 		}
 	}
+
+	private static final Logger LOG = Logger.getLogger(ChangeConverter.class);
 
 	private final CompositeChange currentChange;
 
@@ -119,8 +118,7 @@ public class ChangeConverter implements IAcceptor<IEmfResourceChange> {
 	}
 
 	protected void _handleReplacements(IEmfResourceChange change) {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		tryWith(outputStream, () -> {
+		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 			try {
 				IFile file = resourceUriConverter.toFile(change.getOldURI());
 				if (!canWrite(file)) {
@@ -135,7 +133,9 @@ public class ChangeConverter implements IAcceptor<IEmfResourceChange> {
 			} catch (IOException e) {
 				Exceptions.throwUncheckedException(e);
 			}
-		});
+		} catch (IOException e) {
+			LOG.error("Error closing stream", e);
+		}
 	}
 
 	protected void _handleReplacements(ITextDocumentChange change) {
@@ -180,8 +180,8 @@ public class ChangeConverter implements IAcceptor<IEmfResourceChange> {
 				addChange(ltkChange);
 			} else {
 				if (change.getNewURI().trimSegments(1).equals(change.getOldURI().trimSegments(1))) {
-					RenameResourceChange ltkChange = new RenameResourceChange(
-							resourceUriConverter.toFile(change.getOldURI()).getFullPath(), change.getNewURI().lastSegment());
+					RenameResourceChange ltkChange = new RenameResourceChange(resourceUriConverter.toFile(change.getOldURI()).getFullPath(),
+							change.getNewURI().lastSegment());
 					addChange(ltkChange);
 				}
 			}
@@ -214,16 +214,11 @@ public class ChangeConverter implements IAcceptor<IEmfResourceChange> {
 			@Override
 			protected ITextEditor run() throws Exception {
 				FileEditorInput editorInput = new FileEditorInput(file);
-				IEditorReference[] editorReferences = workbench.getActiveWorkbenchWindow().getActivePage().getEditorReferences();
-				Optional<ITextEditor> textEditorPart = Arrays.asList(editorReferences) //
-						.stream() //
-						.map(editorRef -> Adapters.adapt(editorRef.getEditor(false), ITextEditor.class)) //
-						.filter(ITextEditor.class::isInstance) //
-						.map(ITextEditor.class::cast) //
-						.filter(textEditor -> textEditor.getEditorInput().equals(editorInput)) //
-						.findFirst();
-
-				return textEditorPart.isPresent() ? textEditorPart.get() : null;
+				IEditorPart editorPart = workbench.getActiveWorkbenchWindow().getActivePage().findEditor(editorInput);
+				if (editorPart instanceof ITextEditor) {
+					return (ITextEditor) editorPart;
+				}
+				return null;
 			}
 		}.syncExec();
 	}
@@ -235,11 +230,11 @@ public class ChangeConverter implements IAcceptor<IEmfResourceChange> {
 	}
 
 	protected void saveEditorsAfterApply() {
-		Arrays.asList(currentChange.getChildren()) //
-				.stream() //
-				.filter(EditorDocumentChange.class::isInstance) //
-				.map(EditorDocumentChange.class::cast) //
-				.forEach(change -> change.setDoSave(true));
+		for (Change change : currentChange.getChildren()) {
+			if (change instanceof EditorDocumentChange) {
+				((EditorDocumentChange) change).setDoSave(true);
+			}
+		}
 	}
 
 }

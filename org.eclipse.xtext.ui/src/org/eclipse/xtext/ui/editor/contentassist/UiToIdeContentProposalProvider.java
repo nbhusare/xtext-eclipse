@@ -9,6 +9,7 @@
 package org.eclipse.xtext.ui.editor.contentassist;
 
 import java.util.ArrayList;
+import java.util.AbstractMap.SimpleEntry;
 
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.jface.text.Region;
@@ -21,7 +22,6 @@ import org.eclipse.xtext.ide.editor.contentassist.ContentAssistEntry;
 import org.eclipse.xtext.ide.editor.contentassist.IIdeContentProposalAcceptor;
 import org.eclipse.xtext.ide.editor.contentassist.IdeContentProposalProvider;
 import org.eclipse.xtext.resource.IEObjectDescription;
-import org.eclipse.xtext.xbase.lib.Pair;
 import org.eclipse.xtext.ui.editor.contentassist.AbstractContentProposalProvider.NullSafeCompletionProposalAcceptor;
 import org.eclipse.xtext.util.TextRegion;
 
@@ -53,13 +53,13 @@ public class UiToIdeContentProposalProvider extends AbstractCompletionProposalFa
 	@Override
 	public void createProposals(org.eclipse.xtext.ui.editor.contentassist.ContentAssistContext context,
 			ICompletionProposalAcceptor acceptor) {
-		ArrayList<Pair<ContentAssistEntry, Integer>> entries = new ArrayList<Pair<ContentAssistEntry, Integer>>();
+		ArrayList<SimpleEntry<ContentAssistEntry, Integer>> entries = new ArrayList<>();
 		IIdeContentProposalAcceptor ideAcceptor = new IIdeContentProposalAcceptor() {
 
 			@Override
 			public void accept(ContentAssistEntry entry, int priority) {
 				if (entry != null) {
-					entries.add(Pair.of(entry, priority));
+					entries.add(new SimpleEntry<ContentAssistEntry, Integer>(entry, priority));
 				}
 			}
 

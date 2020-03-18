@@ -17,7 +17,9 @@ import org.eclipse.xtext.xbase.lib.Procedures.Procedure0;
 /**
  * @author koehnlein - Initial contribution and API
  * @since 2.13
+ * @deprecated Use the Java {@code try}-with-resources statement
  */
+@Deprecated
 public class TryWithResource {
 
 	private static final Logger LOG = Logger.getLogger(TryWithResource.class);

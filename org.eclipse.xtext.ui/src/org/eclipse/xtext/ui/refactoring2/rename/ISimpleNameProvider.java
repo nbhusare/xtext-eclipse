@@ -8,8 +8,6 @@
  */
 package org.eclipse.xtext.ui.refactoring2.rename;
 
-import java.util.Optional;
-
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EcorePackage;
@@ -30,9 +28,9 @@ public interface ISimpleNameProvider {
 		@Override
 		public String getSimpleName(EObject target) {
 			if (target != null) {
-				Optional<EAttribute> nameAttribute = getNameEAttribute(target);
-				if (nameAttribute.isPresent()) {
-					return (String) target.eGet(nameAttribute.get());
+				EAttribute nameAttribute = getNameEAttribute(target);
+				if (nameAttribute != null) {
+					return (String) target.eGet(nameAttribute);
 				}
 			}
 			return null;
@@ -41,18 +39,18 @@ public interface ISimpleNameProvider {
 		@Override
 		public boolean canRename(EObject target) {
 			if (target != null) {
-				return getNameEAttribute(target).isPresent();
+				return getNameEAttribute(target) != null;
 			}
 			return false;
 		}
 
-		protected Optional<EAttribute> getNameEAttribute(EObject target) {
-			return target.eClass() //
-					.getEAllAttributes() //
-					.stream() //
-					.filter(eAttribute -> eAttribute.getName() == "name" //
-							&& eAttribute.getEType() == EcorePackage.Literals.ESTRING) //
-					.findFirst();
+		protected EAttribute getNameEAttribute(EObject target) {
+			for (EAttribute eAttribute : target.eClass().getEAllAttributes()) {
+				if (eAttribute.getName() == "name" && eAttribute.getEType() == EcorePackage.Literals.ESTRING) {
+					return eAttribute;
+				}
+			}
+			return null;
 		}
 	}
 

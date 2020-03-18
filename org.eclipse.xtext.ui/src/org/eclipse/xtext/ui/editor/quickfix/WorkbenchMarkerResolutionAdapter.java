@@ -26,12 +26,10 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
-import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtext.ui.editor.model.edit.BatchModification;
 import org.eclipse.xtext.ui.editor.model.edit.BatchModification.IBatchableModification;
 import org.eclipse.xtext.ui.util.IssueUtil;
 import org.eclipse.xtext.validation.Issue;
-import org.eclipse.xtext.xbase.lib.Pure;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -50,7 +48,7 @@ public class WorkbenchMarkerResolutionAdapter extends WorkbenchMarkerResolution 
 		private Provider<WorkbenchMarkerResolutionAdapter> provider;
 
 		public IMarkerResolution create(IMarker marker, IssueResolution resolution) {
-			final WorkbenchMarkerResolutionAdapter resolutionFix = provider.get();
+			WorkbenchMarkerResolutionAdapter resolutionFix = provider.get();
 			resolutionFix.primaryResolution = resolution;
 			resolutionFix.primaryMarker = marker;
 			return resolutionFix;
@@ -68,16 +66,14 @@ public class WorkbenchMarkerResolutionAdapter extends WorkbenchMarkerResolution 
 	@Inject
 	private Provider<BatchModification> batchModificationProvider;
 
-	@Accessors
 	private IssueResolution primaryResolution;
 
-	@Accessors
 	private IMarker primaryMarker;
 
 	@Override
-	public IMarker[] findOtherMarkers(final IMarker[] markers) {
+	public IMarker[] findOtherMarkers(IMarker[] markers) {
 		return Arrays.asList(markers).stream()
-				.filter(marker -> marker != primaryMarker && issueUtil.getCode(primaryMarker) == issueUtil.getCode(marker))
+				.filter(marker -> marker != primaryMarker && issueUtil.getCode(primaryMarker).equals(issueUtil.getCode(marker)))
 				.toArray(IMarker[]::new);
 	}
 
@@ -87,7 +83,7 @@ public class WorkbenchMarkerResolutionAdapter extends WorkbenchMarkerResolution 
 	}
 
 	@Override
-	public void run(final IMarker marker) {
+	public void run(IMarker marker) {
 		if (!marker.exists()) {
 			return;
 		}
@@ -95,27 +91,27 @@ public class WorkbenchMarkerResolutionAdapter extends WorkbenchMarkerResolution 
 	}
 
 	@Override
-	public void run(final IMarker[] markers, final IProgressMonitor progressMonitor) {
-		final Map<IProject, List<IMarker>> markersByProject = Arrays.asList(markers).stream() //
+	public void run(IMarker[] markers, IProgressMonitor progressMonitor) {
+		Map<IProject, List<IMarker>> markersByProject = Arrays.asList(markers).stream() //
 				.collect(Collectors.groupingBy(marker -> marker.getResource().getProject()));
 
-		final SubMonitor monitor = SubMonitor.convert(progressMonitor);
+		SubMonitor monitor = SubMonitor.convert(progressMonitor);
 		monitor.beginTask("Applying resolutions", markersByProject.size());
 
-		markersByProject.entrySet().forEach(e -> {
-			final BatchModification batch = batchModificationProvider.get();
-			batch.setProject(e.getKey());
+		markersByProject.forEach((key, value) -> {
+			BatchModification batch = batchModificationProvider.get();
+			batch.setProject(key);
 
-			final List<IMarker> markersInProject = e.getValue();
-			final Stream<IssueResolution> resolutions = markersInProject.stream() //
+			List<IMarker> markersInProject = value;
+			Stream<IssueResolution> resolutions = markersInProject.stream() //
 					.map(marker -> resolution(marker)) //
 					.filter(Objects::nonNull);
 			cancelIfNeeded(monitor);
 
-			final List<IBatchableModification> modifications = resolutions //
+			List<IBatchableModification> modifications = resolutions //
 					.map(resolution -> resolution.getModification()) //
-					.filter(BatchModification.IBatchableModification.class::isInstance) //
-					.map(BatchModification.IBatchableModification.class::cast) //
+					.filter(IBatchableModification.class::isInstance) //
+					.map(IBatchableModification.class::cast) //
 					.collect(Collectors.toList());
 			cancelIfNeeded(monitor);
 
@@ -132,13 +128,13 @@ public class WorkbenchMarkerResolutionAdapter extends WorkbenchMarkerResolution 
 		}
 	}
 
-	public IssueResolution resolution(final IMarker marker) {
+	public IssueResolution resolution(IMarker marker) {
 		if (!marker.exists()) {
 			return null;
 		}
-		final Issue issue = issueUtil.createIssue(marker);
-		final List<IssueResolution> resolutions = resolutionsGenerator.getResolutionProvider().getResolutions(issue);
-		final Optional<IssueResolution> issueResolution = resolutions.stream()
+		Issue issue = issueUtil.createIssue(marker);
+		List<IssueResolution> resolutions = resolutionsGenerator.getResolutionProvider().getResolutions(issue);
+		Optional<IssueResolution> issueResolution = resolutions.stream()
 				.filter(resolution -> isSameResolution(resolution, primaryResolution)).findFirst();
 		if (!issueResolution.isPresent()) {
 			LOG.warn("Resolution missing for " + issue.getCode());
@@ -156,24 +152,22 @@ public class WorkbenchMarkerResolutionAdapter extends WorkbenchMarkerResolution 
 		return resolutionsGenerator.getImage(primaryResolution);
 	}
 
-	private boolean isSameResolution(final IssueResolution issueResolution, final IssueResolution other) {
+	private boolean isSameResolution(IssueResolution issueResolution, IssueResolution other) {
 		return issueResolution != null //
 				&& other != null //
-				&& issueResolution.getDescription() == other.getDescription() //
-				&& issueResolution.getLabel() == other.getLabel() //
-				&& issueResolution.getImage() == other.getImage();
+				&& issueResolution.getDescription().equals(other.getDescription()) //
+				&& issueResolution.getLabel().equals(other.getLabel()) //
+				&& issueResolution.getImage().equals(other.getImage());
 	}
 
-	@Pure
 	public IssueResolution getPrimaryResolution() {
 		return primaryResolution;
 	}
 
-	public void setPrimaryResolution(final IssueResolution primaryResolution) {
+	public void setPrimaryResolution(IssueResolution primaryResolution) {
 		this.primaryResolution = primaryResolution;
 	}
 
-	@Pure
 	public IMarker getPrimaryMarker() {
 		return primaryMarker;
 	}

@@ -8,9 +8,8 @@
  */
 package org.eclipse.xtext.ui.refactoring2.participant;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IFolder;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -45,7 +44,7 @@ public class XtextCopyResourceParticipant extends CopyParticipant implements ISh
 		} catch (OperationCanceledException e) {
 			throw e;
 		} catch (CoreException e) {
-			throw new RuntimeException(e);
+			return RefactoringStatus.createErrorStatus("Error copying resource participant");
 		}
 	}
 
@@ -69,15 +68,11 @@ public class XtextCopyResourceParticipant extends CopyParticipant implements ISh
 	public void addElement(Object element, RefactoringArguments arguments) {
 		if (arguments instanceof CopyArguments) {
 			if (element instanceof IResource) {
+				IResource resource = (IResource) element;
 				Object destination = ((CopyArguments) arguments).getDestination();
-				if (destination instanceof IFolder || destination instanceof IProject) {
-					IFile destinationFile = null;
-					if (destination instanceof IFolder) {
-						destinationFile = ((IFolder) destination).getFile(((IResource) element).getName());
-					} else if (destination instanceof IProject) {
-						destinationFile = ((IProject) destination).getFile(((IResource) element).getName());
-					}
-					processor.addChangedResource(((IResource) element), ((IResource) element).getFullPath(), destinationFile.getFullPath());
+				if (destination instanceof IContainer) {
+					IFile destinationFile = ((IContainer) destination).getFile(resource.getFullPath());
+					processor.addChangedResource(resource, resource.getFullPath(), destinationFile.getFullPath());
 				}
 			}
 		}

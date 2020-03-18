@@ -16,7 +16,6 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.source.DefaultCharacterPairMatcher;
 import org.eclipse.jface.text.source.ICharacterPairMatcher;
 import org.eclipse.xtext.ide.editor.bracketmatching.IBracePairProvider;
-import org.eclipse.xtext.xbase.lib.Conversions;
 
 import com.google.inject.Inject;
 
@@ -31,12 +30,12 @@ public class BracePairMatcher implements ICharacterPairMatcher {
 
 	@Inject
 	public void setBracePairProvider(IBracePairProvider bracePairProvider) {
-		final List<Character> chars = getChars(bracePairProvider);
-		characterPairMatcher = new DefaultCharacterPairMatcher(((char[]) Conversions.unwrapArray(chars, char.class)));
+		List<Character> chars = getChars(bracePairProvider);
+		characterPairMatcher = new DefaultCharacterPairMatcher(chars.toString().toCharArray());
 	}
 
 	protected List<Character> getChars(IBracePairProvider bracePairProvider) {
-		final List<Character> chars = new ArrayList<>();
+		List<Character> chars = new ArrayList<>();
 		bracePairProvider.getPairs().forEach(pair -> {
 			if (pair.getLeftBrace().length() == 1 && pair.getRightBrace().length() == 1) {
 				chars.add(pair.getLeftBrace().charAt(0));

@@ -8,7 +8,7 @@
  */
 package org.eclipse.xtext.ui.editor.navigation;
 
-import java.util.function.Consumer;
+import java.util.Iterator;
 
 import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.ISelection;
@@ -23,7 +23,6 @@ import org.eclipse.xtext.resource.IResourceDescription;
 import org.eclipse.xtext.ui.editor.IURIEditorOpener;
 import org.eclipse.xtext.xbase.lib.Procedures.Procedure1;
 
-import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -38,19 +37,20 @@ public class NavigationService {
 	@Inject
 	private IURIEditorOpener uriEditorOpener;
 
-	public void open(final OpenEvent openEvent) {
+	public void open(OpenEvent openEvent) {
 		open(openEvent, true);
 	}
 
-	@SuppressWarnings("unchecked")
 	public void open(OpenEvent openEvent, boolean select) {
-		final ISelection selection = openEvent.getSelection();
+		ISelection selection = openEvent.getSelection();
 		if (selection instanceof IStructuredSelection) {
-			Streams.stream(((IStructuredSelection) selection).iterator()) //
-					.filter(INavigatable.class::isInstance) //
-					.forEach(navigatable -> {
-						open((INavigatable) navigatable, select);
-					});
+			Iterator<?> iterator = ((IStructuredSelection) selection).iterator();
+			while (iterator.hasNext()) {
+				IStructuredSelection structuredSelection = (IStructuredSelection) iterator.next();
+				if (structuredSelection instanceof INavigatable) {
+					open((INavigatable) structuredSelection, select);
+				}
+			}
 		}
 	}
 
@@ -60,14 +60,13 @@ public class NavigationService {
 
 	public void open(INavigatable navigatable, boolean select) {
 		if (navigatable != null) {
-			final Object navigatableElement = navigatable.getNavigationElement();
+			Object navigatableElement = navigatable.getNavigationElement();
 			if (navigatableElement instanceof IReferenceDescription) {
-				uriEditorOpener.open( //
-						((IReferenceDescription) navigatableElement).getSourceEObjectUri(), //
-						((IReferenceDescription) navigatableElement).getEReference(), //
-						((IReferenceDescription) navigatableElement).getIndexInList(), //
-						select //
-				);
+				IReferenceDescription referenceDescription = (IReferenceDescription) navigatableElement;
+				uriEditorOpener.open(referenceDescription.getSourceEObjectUri(), //
+						referenceDescription.getEReference(), //
+						referenceDescription.getIndexInList(), //
+						select);
 			} else if (navigatableElement instanceof IEObjectDescription) {
 				uriEditorOpener.open(((IEObjectDescription) navigatableElement).getEObjectURI(), select);
 			} else if (navigatableElement instanceof IResourceDescription) {
@@ -90,8 +89,8 @@ public class NavigationService {
 		return new OpenAndLinkWithEditorHelper(viewer) {
 
 			@Override
-			protected void activate(final ISelection selection) {
-				final int currentMode = OpenStrategy.getOpenMethod();
+			protected void activate(ISelection selection) {
+				int currentMode = OpenStrategy.getOpenMethod();
 				try {
 					OpenStrategy.setOpenMethod(OpenStrategy.DOUBLE_CLICK);
 					opener.apply(new OpenEvent(viewer, selection));
@@ -101,12 +100,12 @@ public class NavigationService {
 			}
 
 			@Override
-			protected void open(final ISelection selection, final boolean activate) {
+			protected void open(ISelection selection, boolean activate) {
 				opener.apply(new OpenEvent(viewer, selection));
 			}
 
 			@Override
-			protected void linkToEditor(final ISelection selection) {
+			protected void linkToEditor(ISelection selection) {
 			}
 		};
 	}

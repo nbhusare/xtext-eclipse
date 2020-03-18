@@ -23,8 +23,6 @@ import org.eclipse.ltk.core.refactoring.participants.ParticipantManager;
 import org.eclipse.ltk.core.refactoring.participants.RefactoringParticipant;
 import org.eclipse.ltk.core.refactoring.participants.RenameArguments;
 import org.eclipse.ltk.core.refactoring.participants.SharableParticipants;
-import org.eclipse.xtend.lib.annotations.AccessorType;
-import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtext.Constants;
 import org.eclipse.xtext.ide.refactoring.IRenameNameValidator;
 import org.eclipse.xtext.ide.refactoring.IRenameStrategy2;
@@ -81,7 +79,6 @@ public class RenameElementProcessor2 extends AbstractRenameProcessor {
 	@Inject
 	private ChangeConverter.Factory changeConverterFactory;
 
-	@Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PUBLIC_SETTER })
 	private String newName;
 
 	private IRenameElementContext renameElementContext;
@@ -130,18 +127,14 @@ public class RenameElementProcessor2 extends AbstractRenameProcessor {
 	@Override
 	public RefactoringStatus checkFinalConditions(IProgressMonitor pm, CheckConditionsContext context)
 			throws CoreException, OperationCanceledException {
-		RenameChange change = new RenameChange(newName, renameElementContext.getTargetElementURI());
-		RenameContext renameContext = new RenameContext(Lists.newArrayList(change), resourceSet, changeSerializer, status);
+		RenameChange renameChange = new RenameChange(newName, renameElementContext.getTargetElementURI());
+		RenameContext renameContext = new RenameContext(Lists.newArrayList(renameChange), resourceSet, changeSerializer, status);
 		renameStrategy.applyRename(renameContext);
 
-		String name = new StringBuilder("Rename ") //
-				.append(originalName) //
-				.append(" to ") //
-				.append(newName) //
-				.toString();
+		String name = "Rename " + originalName + " to " + newName;
 		ChangeConverter changeConverter = changeConverterFactory.create(name, null, status);
 		changeSerializer.applyModifications(changeConverter);
-		this.change = changeConverter.getChange();
+		change = changeConverter.getChange();
 		return status.getRefactoringStatus();
 	}
 
