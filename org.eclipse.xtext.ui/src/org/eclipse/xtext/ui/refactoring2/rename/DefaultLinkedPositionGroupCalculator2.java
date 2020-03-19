@@ -78,8 +78,8 @@ public class DefaultLinkedPositionGroupCalculator2 implements ILinkedPositionGro
 					"Could not determine the project for context resource " + renameElementContext.getContextResourceURI());
 		}
 
-		CachingResourceSetProvider resourceSetProvider = new CachingResourceSetProvider(this.resourceSetProvider);
-		ResourceSet resourceSet = resourceSetProvider.get(project);
+		CachingResourceSetProvider cachingResourceSetProvider = new CachingResourceSetProvider(resourceSetProvider);
+		ResourceSet resourceSet = cachingResourceSetProvider.get(project);
 		EObject targetElement = resourceSet.getEObject(renameElementContext.getTargetElementURI(), true);
 		if (targetElement == null) {
 			throw new IllegalStateException("Target element could not be loaded");

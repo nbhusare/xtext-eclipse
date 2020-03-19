@@ -44,7 +44,7 @@ public class XtextCopyResourceParticipant extends CopyParticipant implements ISh
 		} catch (OperationCanceledException e) {
 			throw e;
 		} catch (CoreException e) {
-			return RefactoringStatus.createErrorStatus("Error copying resource participant");
+			return RefactoringStatus.createFatalErrorStatus("Error copying resource participant");
 		}
 	}
 

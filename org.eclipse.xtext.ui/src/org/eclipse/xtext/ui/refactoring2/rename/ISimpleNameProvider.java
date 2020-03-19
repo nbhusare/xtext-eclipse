@@ -46,7 +46,7 @@ public interface ISimpleNameProvider {
 
 		protected EAttribute getNameEAttribute(EObject target) {
 			for (EAttribute eAttribute : target.eClass().getEAllAttributes()) {
-				if (eAttribute.getName() == "name" && eAttribute.getEType() == EcorePackage.Literals.ESTRING) {
+				if (eAttribute.getName().equals("name") && eAttribute.getEType() == EcorePackage.Literals.ESTRING) {
 					return eAttribute;
 				}
 			}

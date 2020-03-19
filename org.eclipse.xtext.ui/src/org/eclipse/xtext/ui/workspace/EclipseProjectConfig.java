@@ -25,7 +25,6 @@ public class EclipseProjectConfig implements IProjectConfig {
 	private final EclipseProjectConfigProvider projectConfigProvider;
 
 	public EclipseProjectConfig(IProject project, EclipseProjectConfigProvider projectConfigProvider) {
-		super();
 		this.project = project;
 		this.projectConfigProvider = projectConfigProvider;
 	}
@@ -71,7 +70,7 @@ public class EclipseProjectConfig implements IProjectConfig {
 	}
 
 	@Override
-	public boolean equals(final Object obj) {
+	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)

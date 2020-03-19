@@ -44,7 +44,7 @@ public class XtextMoveResourceParticipant extends MoveParticipant implements ISh
 		} catch (OperationCanceledException e) {
 			throw e;
 		} catch (CoreException e) {
-			return RefactoringStatus.createErrorStatus("Error moving resource participant");
+			return RefactoringStatus.createFatalErrorStatus("Error moving resource participant");
 		}
 	}
 

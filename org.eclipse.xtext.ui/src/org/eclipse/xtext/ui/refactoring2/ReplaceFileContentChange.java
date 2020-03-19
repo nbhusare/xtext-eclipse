@@ -81,12 +81,12 @@ public class ReplaceFileContentChange extends ResourceChange {
 			try {
 				oldContents = ByteStreams.toByteArray(oldContentsIS);
 			} catch (IOException e) {
-				LOG.error("Error reading file contents", e);
+				LOG.error("Error reading contents of file " + file.getName(), e);
 			}
 		} catch (IOException e) {
 			LOG.error("Error closing stream", e);
 		} catch (CoreException e) {
-			LOG.error("Error reading file contents", e);
+			LOG.error("Error reading contents of file " + file.getName(), e);
 		}
 		return oldContents;
 	}
