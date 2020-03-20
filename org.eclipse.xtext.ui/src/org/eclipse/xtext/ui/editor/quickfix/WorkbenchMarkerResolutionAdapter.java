@@ -8,13 +8,13 @@
  */
 package org.eclipse.xtext.ui.editor.quickfix;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.log4j.Logger;
 import org.eclipse.core.resources.IMarker;
@@ -28,6 +28,7 @@ import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
 import org.eclipse.xtext.ui.editor.model.edit.BatchModification;
 import org.eclipse.xtext.ui.editor.model.edit.BatchModification.IBatchableModification;
+import org.eclipse.xtext.ui.editor.model.edit.IModification;
 import org.eclipse.xtext.ui.util.IssueUtil;
 import org.eclipse.xtext.validation.Issue;
 
@@ -72,9 +73,14 @@ public class WorkbenchMarkerResolutionAdapter extends WorkbenchMarkerResolution 
 
 	@Override
 	public IMarker[] findOtherMarkers(IMarker[] markers) {
-		return Arrays.asList(markers).stream()
-				.filter(marker -> marker != primaryMarker && issueUtil.getCode(primaryMarker).equals(issueUtil.getCode(marker)))
-				.toArray(IMarker[]::new);
+		List<IMarker> otherMarkers = new ArrayList<>();
+		for (IMarker marker : markers) {
+			if (marker != primaryMarker //
+					&& Objects.equals(issueUtil.getCode(primaryMarker), issueUtil.getCode(marker))) {
+				otherMarkers.add(marker);
+			}
+		}
+		return otherMarkers.toArray(new IMarker[0]);
 	}
 
 	@Override
@@ -102,17 +108,18 @@ public class WorkbenchMarkerResolutionAdapter extends WorkbenchMarkerResolution 
 			BatchModification batch = batchModificationProvider.get();
 			batch.setProject(key);
 
+			List<IBatchableModification> modifications = new ArrayList<>();
 			List<IMarker> markersInProject = value;
-			Stream<IssueResolution> resolutions = markersInProject.stream() //
-					.map(marker -> resolution(marker)) //
-					.filter(Objects::nonNull);
-			cancelIfNeeded(monitor);
-
-			List<IBatchableModification> modifications = resolutions //
-					.map(resolution -> resolution.getModification()) //
-					.filter(IBatchableModification.class::isInstance) //
-					.map(IBatchableModification.class::cast) //
-					.collect(Collectors.toList());
+			markersInProject.forEach(marker -> {
+				IssueResolution resolution = resolution(marker);
+				if (resolution != null) {
+					IModification modification = resolution.getModification();
+					if (modification instanceof IBatchableModification) {
+						modifications.add((IBatchableModification) modification);
+					}
+				}
+			});
+			
 			cancelIfNeeded(monitor);
 
 			batch.apply(modifications, monitor.newChild(1));
@@ -138,6 +145,7 @@ public class WorkbenchMarkerResolutionAdapter extends WorkbenchMarkerResolution 
 				.filter(resolution -> isSameResolution(resolution, primaryResolution)).findFirst();
 		if (!issueResolution.isPresent()) {
 			LOG.warn("Resolution missing for " + issue.getCode());
+			return null;
 		}
 		return issueResolution.get();
 	}
@@ -155,9 +163,9 @@ public class WorkbenchMarkerResolutionAdapter extends WorkbenchMarkerResolution 
 	private boolean isSameResolution(IssueResolution issueResolution, IssueResolution other) {
 		return issueResolution != null //
 				&& other != null //
-				&& issueResolution.getDescription().equals(other.getDescription()) //
-				&& issueResolution.getLabel().equals(other.getLabel()) //
-				&& issueResolution.getImage().equals(other.getImage());
+				&& Objects.equals(issueResolution.getDescription(), other.getDescription())//
+				&& Objects.equals(issueResolution.getLabel(), other.getLabel())//
+				&& Objects.equals(issueResolution.getImage(), other.getImage());
 	}
 
 	public IssueResolution getPrimaryResolution() {

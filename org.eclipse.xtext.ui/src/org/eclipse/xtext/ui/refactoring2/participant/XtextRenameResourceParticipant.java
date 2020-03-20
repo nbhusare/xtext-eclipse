@@ -67,7 +67,7 @@ public class XtextRenameResourceParticipant extends RenameParticipant implements
 		addElement(element, getArguments());
 		return true;
 	}
-
+	
 	@Override
 	public void addElement(Object element, RefactoringArguments arguments) {
 		if (arguments instanceof RenameArguments) {
